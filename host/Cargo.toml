@@ -1,0 +1,22 @@
+[package]
+name = "nmb-host"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+build = "build.rs"
+
+[dependencies]
+anyhow = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+wasapi = "0.25"
+rtrb = "0.3"
+ndarray = "0.15"
+deep_filter = { path = "../.deps/DeepFilterNet/libDF", default-features = false, features = ["tract", "default-model", "logging"] }
+hound = "3.5"
+rustfft = "6"
+kstring = "=2.0.2"
+tokio = { version = "1", features = ["rt-multi-thread", "net", "io-util", "time"] }
+
+[build-dependencies]
+cc = "1"
