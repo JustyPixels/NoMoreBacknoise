@@ -90,13 +90,17 @@ fn pipe(name: &str) -> Result<()> {
                 }
                 "recordExport" => {
                     let session = current.as_ref().context("The recording belongs to the current processing session")?;
-                    let rec = session.recording.lock().unwrap();
-                    anyhow::ensure!(!rec.active && !rec.raw.is_empty(), "Stop a non-empty recording before exporting");
                     let path = std::path::PathBuf::from(request.path.as_ref().context("Choose an export path")?);
                     anyhow::ensure!(path.is_absolute(), "Export requires an absolute path");
                     let clean_path = path.with_extension("clean.wav"); let raw_path = path.with_extension("raw.wav");
                     anyhow::ensure!(!clean_path.exists() && !raw_path.exists(), "Choose a new file name; existing recordings will not be overwritten");
-                    write_wav(&raw_path, &rec.raw)?; write_wav(&clean_path, &rec.clean)?;
+                    let (raw, clean) = {
+                        let rec = session.recording.lock().unwrap();
+                        anyhow::ensure!(!rec.active && !rec.raw.is_empty(), "Stop a non-empty recording before exporting");
+                        (rec.raw.clone(), rec.clean.clone())
+                    };
+                    // File I/O must never hold the audio worker's recording lock.
+                    write_wav(&raw_path, &raw)?; write_wav(&clean_path, &clean)?;
                     Ok(json!({"type":"ack","rawPath":raw_path,"cleanPath":clean_path}))
                 }
                 "shutdown" => { if let Some(mut session) = current.take() { session.stop(); } Ok(json!({"type":"ack"})) }
