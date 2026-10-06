@@ -51,7 +51,7 @@ impl Session {
                     thread::sleep(Duration::from_millis(5)); continue;
                 }
                 if last_input.elapsed() > Duration::from_millis(500) && used == 0 {
-                    if let Ok(fresh) = Pipeline::new(pipeline.settings.clone()) { pipeline = fresh; }
+                    if let Err(error) = pipeline.reset_stream() { let _ = events.try_send(json!({"type":"warning","code":"fallback","message":format!("Filter reset failed; use Retry: {error}")})); }
                     last_input = Instant::now();
                 }
                 if io.input.slots() > FRAME * 3 { while io.input.slots() > FRAME * 2 { let _ = io.input.pop(); worker_state.dropped.fetch_add(1, Ordering::Relaxed); } }

@@ -24,7 +24,7 @@ Section "NoMoreBacknoise++" SEC_MAIN
     WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\NoMoreBacknoise" "DisplayName" "NoMoreBacknoise++"
     WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\NoMoreBacknoise" "DisplayVersion" "0.1.0"
     WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\NoMoreBacknoise" "Publisher" "JustPixels"
-    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\NoMoreBacknoise" "UninstallString" '$"$INSTDIR\Uninstall.exe$"'
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\NoMoreBacknoise" "UninstallString" '"$INSTDIR\Uninstall.exe"'
     WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\NoMoreBacknoise" "NoModify" 1
     WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\NoMoreBacknoise" "NoRepair" 1
 SectionEnd

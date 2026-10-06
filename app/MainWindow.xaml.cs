@@ -178,7 +178,7 @@ public partial class MainWindow : Window {
     private void OnHostEvent(JsonElement root) {
         if(_quit)return; var type=root.GetProperty("type").GetString();
         if(type=="status") { EngineStatus.Text=root.GetProperty("engine").GetString()+" / CPU"; DiagnosticText.Text=root.GetProperty("message").GetString();if(root.TryGetProperty("degraded",out var degraded)&&degraded.GetBoolean())Warn(DiagnosticText.Text??"");return; }
-        if(type=="error" || type=="warning") { Warn(root.GetProperty("message").GetString()??"");if(type=="error"){_running=false;StartButton.SetResourceReference(Button.ContentProperty,"t.start");StateLabel.Text=Localization.T("stopped");}return; }
+        if(type=="error" || type=="warning") { Warn(root.GetProperty("message").GetString()??"");if(root.TryGetProperty("code",out var code) && code.GetString()=="device"){Waveform.Clear();Spectrum.Clear();RawMeter.Value=CleanMeter.Value=-60;}if(type=="error"){_running=false;StartButton.SetResourceReference(Button.ContentProperty,"t.start");StateLabel.Text=Localization.T("stopped");}return; }
         if(type=="recordingStopped") { _recording=false;RecordButton.SetResourceReference(Button.ContentProperty,"t.recordTest");ExportRecordingButton.IsEnabled=true;return; }
         if(type!="telemetry")return;
         float[] Samples(string key)=>root.GetProperty(key).EnumerateArray().Select(x=>x.GetSingle()).ToArray();

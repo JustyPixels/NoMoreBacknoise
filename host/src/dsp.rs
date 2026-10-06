@@ -138,9 +138,21 @@ impl Pipeline {
     }
     fn reset_alignment(&mut self) {
         self.raw_delay = VecDeque::from(vec![0.; self.delay_frames * FRAME]);
-        self.voice_delay = VecDeque::from(vec![0.; self.delay_frames]);
+        // RNNoise's probability describes its delayed analysis window; only delay
+        // it further when aligning it with DeepFilterNet's longer output delay.
+        self.voice_delay = VecDeque::from(vec![0.; self.delay_frames.saturating_sub(1)]);
     }
     pub fn delay_samples(&self) -> usize { self.delay_frames * FRAME }
+    pub fn reset_stream(&mut self) -> Result<()> {
+        if self.selected == "raw" { self.reset_alignment(); self.expander = Expander::new(); return Ok(()); }
+        let original = self.settings.clone();
+        let mut effective = original.clone(); effective.engine = self.selected.clone();
+        let mut fresh = Self::new(effective)?;
+        fresh.settings = original;
+        if self.degraded { fresh.degraded = true; fresh.reason = self.reason.clone(); }
+        *self = fresh;
+        Ok(())
+    }
     pub fn update(&mut self, settings: Settings) -> Result<()> {
         settings.validate()?;
         if settings.engine != self.settings.engine || settings.backend != self.settings.backend { bail!("Engine changes require Retry or restart"); }
@@ -200,4 +212,5 @@ mod tests {
     #[test] fn gate_hysteresis_avoids_chatter() { let mut gate = Expander::new(); let cfg = Settings::default(); let mut frame = [0.2; FRAME]; gate.apply(&mut frame, 0.8, &cfg); for _ in 0..100 { frame.fill(0.2); gate.apply(&mut frame, cfg.speech_threshold * 0.8, &cfg); assert!(frame[FRAME - 1] > 0.19); } }
     #[test] fn missing_rnnoise_falls_back_to_raw_without_gain() { let mut p = Pipeline::new(Settings { engine: "rnnoise".into(), ..Settings::default() }).unwrap(); p.rn = None; p.selected = "raw".into(); assert_eq!(p.process(&[0.1; FRAME], false, false).clean, [0.1; FRAME]); }
     #[test] fn raw_alignment_matches_declared_delay() { let mut p = Pipeline::new(Settings { engine: "rnnoise".into(), ..Settings::default() }).unwrap(); assert_eq!(p.process(&[0.2; FRAME], false, false).raw, [0.; FRAME]); assert_eq!(p.process(&[0.3; FRAME], false, false).raw, [0.2; FRAME]); }
+    #[test] fn reconnect_does_not_restore_a_failed_engine() { let mut p = Pipeline::new(Settings { engine: "rnnoise".into(), ..Settings::default() }).unwrap(); p.selected="raw".into();p.rn=None;p.degraded=true;p.delay_frames=0;p.reset_stream().unwrap();assert_eq!(p.selected,"raw");assert!(p.degraded);assert_eq!(p.process(&[0.1;FRAME],false,false).clean,[0.1;FRAME]); }
 }
