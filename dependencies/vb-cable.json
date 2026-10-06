@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "product": "VB-CABLE (standard cable)",
+  "vendor": "VB-Audio Software",
+  "package": "VBCABLE_Driver_Pack45.zip",
+  "driverVersion": "3.3.1.7",
+  "url": "https://download.vb-audio.com/Download_CABLE/VBCABLE_Driver_Pack45.zip",
+  "sha256": "b950e39f01af1d04ea623c8f6d8eb9b6ea5c477c637295fabf20631c85116bfb",
+  "installer": "VBCABLE_Setup_x64.exe",
+  "catalog": "vbaudio_cable64_win10.cat",
+  "installerSigner": "BUREL VINCENT Entrepreneur individuel",
+  "catalogSigner": "Microsoft Windows Hardware Compatibility Publisher",
+  "hardwareId": "VBAudioVACWDM",
+  "installMode": "interactive",
+  "silentInstallationValidated": false,
+  "site": "https://vb-audio.com/Cable/",
+  "license": "https://vb-audio.com/Services/licensing.htm",
+  "donate": "https://vb-audio.com/Services/licensing.htm#Donate"
+}

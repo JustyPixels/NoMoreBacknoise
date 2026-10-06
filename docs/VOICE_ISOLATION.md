@@ -1,6 +1,6 @@
 # Bounded enrolled-voice feasibility review
 
-Decision for v0.1.0: **unavailable**. General suppression ships; no enrollment or working-looking isolation UI is exposed. A voice/speaker recognition gate would only mute segments and cannot separate overlapping speakers, so it is excluded.
+Decision for v0.2.0-preview.1: **unavailable**. General suppression ships; no enrollment or working-looking isolation UI is exposed. A voice/speaker recognition gate would only mute segments and cannot separate overlapping speakers, so it is excluded.
 
 Admission requires publicly accessible pretrained weights, documented redistribution rights, offline reproducible *streaming waveform extraction*, ≤50 ms application delay, processing below half the available frame time on a named reference CPU, median SI-SDR improvement ≥5 dB on held-out overlapping-speaker mixtures, and clean-speech STOI drop ≤0.03. Custom training is outside v1.
 

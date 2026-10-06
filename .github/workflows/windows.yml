@@ -25,20 +25,24 @@ jobs:
       - name: Verify release engine timing and protocol
         shell: pwsh
         run: ./scripts/verify.ps1
-      - name: Test shared driver ring in user mode
+      - name: Verify cable assistant and settings migration
         shell: pwsh
-        run: ./scripts/test-bridge.ps1
+        run: ./scripts/verify-cable.ps1
       - uses: actions/upload-artifact@v4
         with:
           name: NoMoreBacknoise-windows-x64
           path: |
-            artifacts/*.exe
-            artifacts/*.zip
+            artifacts/NoMoreBacknoise-*.exe
+            artifacts/NoMoreBacknoise-*.zip
             artifacts/SHA256SUMS.txt
             artifacts/validation.json
+            artifacts/cable-validation.json
       - name: Publish tagged release
         if: startsWith(github.ref, 'refs/tags/v')
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create $env:GITHUB_REF_NAME artifacts/*.exe artifacts/*.zip artifacts/SHA256SUMS.txt artifacts/validation.json --title "NoMoreBacknoise++ $env:GITHUB_REF_NAME" --notes-file docs/RELEASE.md --prerelease
+        run: |
+          $version=(Get-Content version.json -Raw | ConvertFrom-Json).version
+          if($env:GITHUB_REF_NAME -ne "v$version") { throw 'Release tag does not match package version' }
+          gh release create $env:GITHUB_REF_NAME "artifacts/NoMoreBacknoise-$version-setup-win-x64.exe" "artifacts/NoMoreBacknoise-$version-portable-win-x64.zip" artifacts/SHA256SUMS.txt artifacts/validation.json artifacts/cable-validation.json --title "NoMoreBacknoise++ $env:GITHUB_REF_NAME" --notes-file docs/RELEASE.md --prerelease

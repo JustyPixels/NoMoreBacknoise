@@ -1,0 +1,140 @@
+{
+  "ui": "Dashboard and assistant rendered in nine locales at 100/125/150/200 percent; pt-BR and Arabic samples inspected",
+  "schemaVersion": 1,
+  "userDeferred": "Real TeamSpeak and Discord tests are assigned to the user",
+  "privacy": "Aggregate results only; no audio, voice features or personal device IDs.",
+  "routing": {
+    "date": "2026-10-06T17:06:01.1686628-03:00",
+    "consumers": 2,
+    "pending": [
+      "Human speech, quiet speech, keyboard and fan comparisons",
+      "Unplug/reconnect and sleep/resume",
+      "TeamSpeak and Discord internal microphone tests"
+    ],
+    "note": "Live WASAPI shared-mode smoke check. No saved audio. Signal presence is not speech-quality validation; estimates exclude cable and hardware delay.",
+    "results": [
+      {
+        "engineRequested": "rnnoise",
+        "cableSignalDetected": true,
+        "engineObserved": "rnnoise",
+        "physicalSignalDetected": true,
+        "maxEstimatedApplicationDelayMs": 74.47353333333332,
+        "maxProcessingMs": 1.2614,
+        "bypassEquality": "passed",
+        "recording": "RAM only, not exported",
+        "telemetryFrames": 90,
+        "simultaneousSecondConsumerSignalDetected": true,
+        "muteOverBypass": "passed"
+      },
+      {
+        "engineRequested": "deepfilter",
+        "cableSignalDetected": true,
+        "engineObserved": "deepfilter",
+        "physicalSignalDetected": true,
+        "maxEstimatedApplicationDelayMs": 95.58493333333332,
+        "maxProcessingMs": 1.9965,
+        "bypassEquality": "passed",
+        "recording": "RAM only, not exported",
+        "telemetryFrames": 90,
+        "simultaneousSecondConsumerSignalDetected": true,
+        "muteOverBypass": "passed"
+      }
+    ]
+  },
+  "audio": {
+    "protocol": "passed",
+    "liveMicrophone": false,
+    "date": "2026-10-06T19:13:50.1020033-03:00",
+    "locales": [
+      "en",
+      "zh-CN",
+      "es",
+      "hi",
+      "ar",
+      "pt-BR",
+      "fr",
+      "ru",
+      "ja"
+    ],
+    "note": "Synthetic smoke test. Human speech quality and full hardware matrix require manual validation.",
+    "engines": [
+      {
+        "initializationMs": 0.2616,
+        "note": "Synthetic signal smoke test; not a speech-quality or hardware-routing benchmark.",
+        "p95ProcessingMs": 0.2803,
+        "reason": "RNNoise selected by user.",
+        "requested": "rnnoise",
+        "selected": "rnnoise",
+        "syntheticNoiseReductionDb": 5.422209738552111
+      },
+      {
+        "initializationMs": 814.6662,
+        "note": "Synthetic signal smoke test; not a speech-quality or hardware-routing benchmark.",
+        "p95ProcessingMs": 0.6386000000000001,
+        "reason": "DeepFilterNet passed startup benchmark: p95 1.22 ms/frame, 30 ms model delay. Device buffering is additional.",
+        "requested": "deepfilter",
+        "selected": "deepfilter",
+        "syntheticNoiseReductionDb": 23.31607581072818
+      }
+    ]
+  },
+  "cable": {
+    "date": "2026-10-06T19:16:09.2929166-03:00",
+    "checks": [
+      "v1 migration preserves devices, profiles, hotkeys and preferences; cable background checks stay off",
+      "fresh cable network checks default off",
+      "v2 round trip",
+      "future settings rejected",
+      "standard vendor hardware identity",
+      "missing driver",
+      "renamed endpoints and reusable driver 2.1.0.0",
+      "renamed endpoints and reusable driver 3.3.1.7",
+      "renamed endpoints and reusable driver 9.0.0.0",
+      "disabled endpoints distinct from absence",
+      "partial endpoints",
+      "unstarted driver",
+      "unrelated endpoints not a cable",
+      "pending boot, post reboot and unavailable boot identity",
+      "all six default roles compared",
+      "official package discovery excludes A+B, mirrors and downloads with arbitrary names",
+      "preview and stable release ordering",
+      "interactive-only approved manifest",
+      "included official ZIP SHA256",
+      "missing package rejected",
+      "invalid package rejected",
+      "offline full extraction and cached Authenticode signer checks; installer not executed",
+      "vendor README retained byte for byte",
+      "tampered signed executable rejected",
+      "wrong signer rejected"
+    ],
+    "actualStandardCableDrivers": 1,
+    "actualDriverVersions": [
+      "3.3.1.7"
+    ],
+    "actualCondition": "Ready",
+    "actualRecognizedRender": 2,
+    "actualRecognizedCapture": 1,
+    "installerExecuted": false,
+    "driverChanged": false,
+    "pending": [
+      "Fresh Windows 10/11 isolated install/uninstall",
+      "Actual UAC cancellation",
+      "Actual driver reboot and renamed/disabled endpoints",
+      "Human speech/noise quality",
+      "Discord and TeamSpeak local and simultaneous capture"
+    ]
+  },
+  "environment": "Windows 10 22H2 x64 development PC; no isolated VM",
+  "installer": {
+    "appUninstall": "passed",
+    "windows": "Windows 10 22H2 x64 development PC, not an isolated VM",
+    "existingCableStillReady": true,
+    "appInstall": "passed",
+    "note": "App-only installer test into workspace with no prior app registration. Windows 11 and clean isolated cable installation remain pending.",
+    "unrelatedFilePreserved": true,
+    "intactBundledZip": "passed",
+    "vendorInstallerExecuted": false,
+    "date": "2026-10-06T19:16:09.8611521-03:00"
+  },
+  "date": "2026-10-06"
+}

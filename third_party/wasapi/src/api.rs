@@ -383,6 +383,13 @@ impl DeviceEnumerator {
         })
     }
 
+    /// Inventory includes disabled/unplugged endpoints; streaming still uses active devices.
+    pub fn get_device_inventory(&self, direction: &Direction) -> WasapiRes<DeviceCollection> {
+        let devs = unsafe { self.enumerator.EnumAudioEndpoints(direction.into(),
+            DEVICE_STATE(DEVICE_STATE_ACTIVE.0 | DEVICE_STATE_DISABLED.0 | DEVICE_STATE_NOTPRESENT.0 | DEVICE_STATE_UNPLUGGED.0))? };
+        Ok(DeviceCollection { collection: devs, direction: *direction })
+    }
+
     /// Get the default playback or capture device for the console role
     pub fn get_default_device(&self, direction: &Direction) -> WasapiRes<Device> {
         self.get_default_device_for_role(direction, &Role::Console)
@@ -635,6 +642,17 @@ impl Device {
     /// Read the device description of the endpoint device (for example, "Speakers")
     pub fn get_description(&self) -> WasapiRes<String> {
         self.get_string_property(&PKEY_Device_DeviceDesc)
+    }
+
+    /// PKEY_Device_InstanceId, defined in Windows Function Discovery property keys.
+    pub fn get_instance_id(&self) -> WasapiRes<String> {
+        self.get_string_property(&PROPERTYKEY {
+            fmtid: windows_core::GUID::from_u128(0x78c34fc8_104a_4aca_9ea4_524d52996e57), pid: 256 })
+    }
+    /// Stable endpoint form factor (Speakers=1, LineLevel=2), independent of custom labels.
+    pub fn get_form_factor(&self) -> WasapiRes<u32> {
+        self.get_property(&windows::Win32::Media::Audio::PKEY_AudioEndpoint_FormFactor,
+            |prop| Ok(unsafe { windows::Win32::System::Com::StructuredStorage::PropVariantToUInt32(prop) }?))
     }
 
     /// Read the device format of the endpoint device, which is the format that the user has selected for the stream

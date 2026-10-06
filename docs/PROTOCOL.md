@@ -6,7 +6,7 @@ Request: `{ "version":1, "id":"unique-id", "op":"devices" }`. Replies have `vers
 
 | Operation | Fields / behavior |
 |---|---|
-| devices | `devices: [{id,name,direction}]`, stable Windows endpoint identity |
+| devices | `devices: [{id,name,direction,instanceId?,state}]`; optional `includeInactive:true` for setup inventory, default active only. Additive fields retain v1 compatibility. `defaults` maps capture/render console/multimedia/communications roles to endpoint IDs or null. UI correlates PnP ancestry with standard hardware ID and driver provider/version; names are never identity. |
 | start | `route:{inputId,outputId?,monitorId?,monitorRaw}`, `settings`, `muted`, `bypass`; ACK then asynchronous status/telemetry |
 | stop | Stops workers and discards session recording |
 | configure | Optional `settings`, `muted`, `bypass`, `monitorRaw`; changes engines require stop/start |

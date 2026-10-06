@@ -13,7 +13,7 @@ use dsp::{Settings, Pipeline, FRAME, RATE};
 struct Request {
     version: u32, id: String, op: String,
     settings: Option<Settings>, route: Option<session::Route>, muted: Option<bool>, bypass: Option<bool>,
-    monitor_raw: Option<bool>, path: Option<String>,
+    monitor_raw: Option<bool>, path: Option<String>, include_inactive: Option<bool>,
 }
 fn main() { if let Err(error) = run() { eprintln!("{error:#}"); std::process::exit(1); } }
 fn run() -> Result<()> {
@@ -35,7 +35,7 @@ fn pipe(name: &str) -> Result<()> {
     let (events, rx) = mpsc::sync_channel::<Value>(32);
     let writer_runtime = runtime.clone();
     let writer = std::thread::spawn(move || { while let Ok(mut value) = rx.recv() { value["version"] = json!(1); let line = format!("{value}\n"); if writer_runtime.block_on(write_half.write_all(line.as_bytes())).is_err() { break; } } });
-    events.send(json!({"type":"hello","hostVersion":"0.1.0","capabilities":{"engines":["rnnoise","deepfilter"],"backends":["cpu"],"controls":{"rnnoise":["strength","speechThreshold","attackMs","holdMs","releaseMs","floorDb","gainDb","gateEnabled"],"deepfilter":["strength","attenuationDb","speechThreshold","attackMs","holdMs","releaseMs","floorDb","gainDb","gateEnabled"]},"voiceIsolation":false,"directml":false}}))?;
+    events.send(json!({"type":"hello","hostVersion":"0.2.0-preview.1","capabilities":{"engines":["rnnoise","deepfilter"],"backends":["cpu"],"controls":{"rnnoise":["strength","speechThreshold","attackMs","holdMs","releaseMs","floorDb","gainDb","gateEnabled"],"deepfilter":["strength","attenuationDb","speechThreshold","attackMs","holdMs","releaseMs","floorDb","gainDb","gateEnabled"]},"voiceIsolation":false,"directml":false}}))?;
     let mut current: Option<session::Session> = None;
     let mut line = String::new();
     loop {
@@ -47,7 +47,7 @@ fn pipe(name: &str) -> Result<()> {
         let result = (|| -> Result<Value> {
             anyhow::ensure!(request.version == 1, "Unsupported protocol version");
             match request.op.as_str() {
-                "devices" => Ok(json!({"type":"devices","devices":audio::devices()?})),
+                "devices" => Ok(json!({"type":"devices","devices":audio::inventory(request.include_inactive.unwrap_or(false))?,"defaults":audio::defaults()?})),
                 "start" => {
                     if let Some(mut session) = current.take() { session.stop(); }
                     let route = request.route.clone().context("Missing route")?;

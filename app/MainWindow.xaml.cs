@@ -30,7 +30,7 @@ public partial class MainWindow : Window {
             if(firstLaunch) { var setup=new FirstLaunchWindow(_settings) { Owner=this }; if(setup.ShowDialog()!=true) { _quit=true; Close(); return; } ApplyStartup(_settings.WindowsStartup); SettingsStore.Save(_settings); }
             LanguageBox.ItemsSource=Localization.Languages; LanguageBox.SelectedValue=_settings.Language;
             FlowDirection=_settings.Language=="ar"?FlowDirection.RightToLeft:FlowDirection.LeftToRight;
-            StartupCheck.IsChecked=_settings.WindowsStartup; AutoProcessCheck.IsChecked=_settings.AutoProcess; TrayCheck.IsChecked=_settings.CloseToTray; UpdatesCheck.IsChecked=_settings.UpdateChecks;
+            StartupCheck.IsChecked=_settings.WindowsStartup; AutoProcessCheck.IsChecked=_settings.AutoProcess; TrayCheck.IsChecked=_settings.CloseToTray; UpdatesCheck.IsChecked=_settings.UpdateChecks;CableUpdatesCheck.IsChecked=_settings.CableUpdateChecks;
             MuteHotkeyBox.Text=_settings.MuteHotkey; BypassHotkeyBox.Text=_settings.BypassHotkey;
             LoadProcessing(_settings.Processing); RefreshProfiles();
             _hotkeys=new Hotkeys(new WindowInteropHelper(this).Handle); _hotkeys.Pressed+=id=> { if(id==1) ToggleMute(this,new()); else ToggleBypass(this,new()); };
@@ -38,6 +38,7 @@ public partial class MainWindow : Window {
             CreateTray(); _ready=true;
             await ConnectHost(); await LoadDevices(); _updateTimer.Start();
             await CheckForUpdates(false);
+            if(!_settings.CableSetupSeen || Environment.GetCommandLineArgs().Contains("--setup-cable"))await ShowCableSetup();
             if(_settings.AutoProcess && InputDevices.SelectedItem!=null) await StartProcessing();
         } catch(Exception ex) { _ready=true; Warn(ex.Message); }
     }
@@ -56,17 +57,18 @@ public partial class MainWindow : Window {
         _host.Disconnected+=message=>Dispatcher.BeginInvoke(()=> { if(!_quit) { _running=false; StartButton.SetResourceReference(Button.ContentProperty,"t.start"); StateLabel.Text=Localization.T("stopped"); Warn(message); } });
         await _host.Connect();
     }
-    private static bool IsVirtual(Endpoint device) => device.Name.Contains("CABLE",StringComparison.OrdinalIgnoreCase) || device.Name.Contains("NoMoreBacknoise",StringComparison.OrdinalIgnoreCase);
+    private static bool IsVirtual(Endpoint device) => device.IsStandardCable;
     private async Task LoadDevices() {
         if(_host==null) return; var response=await _host.Request("devices");
         var devices=JsonSerializer.Deserialize<List<Endpoint>>(response.GetProperty("devices"),App.Json)!;
+        var drivers=await Task.Run(CableDevices.Drivers);CableDevices.Identify(devices,drivers);
         var wasReady=_ready; _ready=false;
         var inputs=devices.Where(d=>d.Direction=="capture" && !IsVirtual(d)).ToList();
         InputDevices.ItemsSource=inputs; InputDevices.SelectedValue=_settings.InputId;
         if(_settings.InputId==null && inputs.Count>0) InputDevices.SelectedIndex=0;
         OutputDevices.ItemsSource=new[] { new Endpoint("",Localization.T("previewOnly"),"render") }.Concat(devices.Where(d=>d.Direction=="render" && IsVirtual(d))).ToList();
         OutputDevices.SelectedValue=_settings.OutputId ?? "";
-        if(_settings.OutputId==null) { var cable=devices.FirstOrDefault(d=>d.Direction=="render" && IsVirtual(d)); if(cable!=null) OutputDevices.SelectedValue=cable.Id; }
+        if(_settings.OutputId==null) { var cable=devices.Where(d=>d.Direction=="render" && IsVirtual(d)).OrderBy(d=>d.FormFactor==1?0:1).FirstOrDefault(); if(cable!=null) OutputDevices.SelectedValue=cable.Id; }
         MonitorDevices.ItemsSource=devices.Where(d=>d.Direction=="render" && !IsVirtual(d)).ToList();
         _ready=wasReady;
         _settings.InputId=InputDevices.SelectedValue as string ?? _settings.InputId;
@@ -157,7 +159,7 @@ public partial class MainWindow : Window {
     private sealed class ProfileExport { public int Version { get;set; }=1;public string Name { get;set; }="Custom";public ProcessingSettings Processing { get;set; }=new(); }
     private void LanguageChanged(object sender,SelectionChangedEventArgs e) { if(!_ready || LanguageBox.SelectedValue is not string locale)return;Localization.Load(locale);_settings.Language=locale;FlowDirection=locale=="ar"?FlowDirection.RightToLeft:FlowDirection.LeftToRight;SaveSettings();if(_tray!=null){_tray.Dispose();CreateTray();} }
     private async void ApplySettings(object sender,RoutedEventArgs e) {
-        try { _hotkeys?.Apply(MuteHotkeyBox.Text,BypassHotkeyBox.Text);ApplyStartup(StartupCheck.IsChecked==true);_settings.WindowsStartup=StartupCheck.IsChecked==true;_settings.AutoProcess=AutoProcessCheck.IsChecked==true;_settings.CloseToTray=TrayCheck.IsChecked==true;_settings.UpdateChecks=UpdatesCheck.IsChecked==true;_settings.MuteHotkey=MuteHotkeyBox.Text;_settings.BypassHotkey=BypassHotkeyBox.Text;SaveSettings();DiagnosticText.Text=Localization.T("settingsSaved");await CheckForUpdates(false); }catch(Exception ex){Warn(ex.Message);} }
+        try { _hotkeys?.Apply(MuteHotkeyBox.Text,BypassHotkeyBox.Text);ApplyStartup(StartupCheck.IsChecked==true);_settings.WindowsStartup=StartupCheck.IsChecked==true;_settings.AutoProcess=AutoProcessCheck.IsChecked==true;_settings.CloseToTray=TrayCheck.IsChecked==true;_settings.UpdateChecks=UpdatesCheck.IsChecked==true;_settings.CableUpdateChecks=CableUpdatesCheck.IsChecked==true;_settings.MuteHotkey=MuteHotkeyBox.Text;_settings.BypassHotkey=BypassHotkeyBox.Text;SaveSettings();DiagnosticText.Text=Localization.T("settingsSaved");await CheckForUpdates(false); }catch(Exception ex){Warn(ex.Message);} }
     private static void ApplyStartup(bool enabled) {
         using var key=Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Run");
         if(enabled)key.SetValue("NoMoreBacknoise",$"\"{Environment.ProcessPath}\"");else key.DeleteValue("NoMoreBacknoise",false);
@@ -165,13 +167,19 @@ public partial class MainWindow : Window {
     private void SaveSettings() { try { SettingsStore.Save(_settings); } catch(Exception ex) { Warn(ex.Message); } }
     private async void CheckUpdates(object sender,RoutedEventArgs e) => await CheckForUpdates(true);
     private async Task CheckForUpdates(bool manual) {
+        if(_settings.CableUpdateChecks && (manual || _settings.LastCableUpdateCheck==null || DateTimeOffset.UtcNow-_settings.LastCableUpdateCheck>=TimeSpan.FromDays(1))) {
+            _settings.LastCableUpdateCheck=DateTimeOffset.UtcNow;SaveSettings();
+            try {if(await CablePolicy.HasNews(CableManifest.Load())) {var message=Localization.T("cableUnapproved");DiagnosticText.Text=message;_tray?.ShowBalloonTip(8000,"VB-CABLE · VB-Audio",message,Forms.ToolTipIcon.Info);}}
+            catch {if(manual)Warn(Localization.T("cableNetworkFailed"));}
+        }
         if(!manual && (!_settings.UpdateChecks || (_settings.LastUpdateCheck!=null && DateTimeOffset.UtcNow-_settings.LastUpdateCheck<TimeSpan.FromDays(1))))return;
         try {
-            _settings.LastUpdateCheck=DateTimeOffset.UtcNow;SaveSettings();using var client=new HttpClient { Timeout=TimeSpan.FromSeconds(10) };client.DefaultRequestHeaders.UserAgent.ParseAdd("NoMoreBacknoise/0.1.0");
-            using var response=await client.GetAsync("https://api.github.com/repos/JustyPixels/NoMoreBacknoise/releases/latest");
+            _settings.LastUpdateCheck=DateTimeOffset.UtcNow;SaveSettings();using var client=new HttpClient { Timeout=TimeSpan.FromSeconds(10) };client.DefaultRequestHeaders.UserAgent.ParseAdd("NoMoreBacknoise/0.2.0-preview.1");
+            using var response=await client.GetAsync("https://api.github.com/repos/JustyPixels/NoMoreBacknoise/releases?per_page=10");
             if(response.StatusCode==System.Net.HttpStatusCode.NotFound){if(manual)DiagnosticText.Text=Localization.T("noRelease");return;}
-            response.EnsureSuccessStatusCode();using var document=JsonDocument.Parse(await response.Content.ReadAsStringAsync());var tag=document.RootElement.GetProperty("tag_name").GetString()??"";
-            if(Version.TryParse(tag.TrimStart('v'),out var version) && version>new Version(0,1,0)) { DiagnosticText.Text=Localization.T("updateAvailable")+" "+tag;_tray?.ShowBalloonTip(8000,"NoMoreBacknoise++",Localization.T("updateAvailable")+" "+tag,Forms.ToolTipIcon.Info); }
+            response.EnsureSuccessStatusCode();using var document=JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            var tag=document.RootElement.EnumerateArray().Where(r=>!r.GetProperty("draft").GetBoolean()).Select(r=>r.GetProperty("tag_name").GetString()??"").FirstOrDefault(t=>ReleaseVersion.IsNewer(t,"0.2.0-preview.1"));
+            if(tag!=null) { DiagnosticText.Text=Localization.T("updateAvailable")+" "+tag;_tray?.ShowBalloonTip(8000,"NoMoreBacknoise++",Localization.T("updateAvailable")+" "+tag,Forms.ToolTipIcon.Info); }
             else if(manual)DiagnosticText.Text=Localization.T("upToDate");
         }catch(Exception ex){if(manual)Warn(ex.Message);}
     }
@@ -202,7 +210,12 @@ public partial class MainWindow : Window {
     private static void OpenUrl(string url)=>Process.Start(new ProcessStartInfo(url){UseShellExecute=true});
     private void OpenRepository(object sender,RoutedEventArgs e)=>OpenUrl(Repository);
     private void OpenDownloads(object sender,RoutedEventArgs e)=>OpenUrl(Repository+"/releases");
-    private void OpenCable(object sender,RoutedEventArgs e)=>OpenUrl("https://vb-audio.com/Cable/");
+    private async void OpenCable(object sender,RoutedEventArgs e) {try {await ShowCableSetup();}catch(Exception ex){Warn(ex.Message);} }
+    private async Task ShowCableSetup() {
+        if(_host==null)await ConnectHost();
+        _settings.CableSetupSeen=true;SaveSettings();
+        new CableSetupWindow(_host,_settings,beforeInstall:async()=>{if(_running)await StopProcessing();}) {Owner=this}.ShowDialog();await LoadDevices();
+    }
     private void OpenGuide(object sender,RoutedEventArgs e)=>OpenUrl(Repository+"/blob/main/docs/SETUP.md");
     private async void WindowClosing(object? sender,CancelEventArgs e) {
         if(Environment.GetCommandLineArgs().Contains("--verify-ui")) return;

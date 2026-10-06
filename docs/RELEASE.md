@@ -1,11 +1,15 @@
-NoMoreBacknoise++ v0.1.0 — cable-based Windows x64 preview.
+NoMoreBacknoise++ v0.2.0-preview.1 — VB-CABLE is the permanent Windows x64 routing solution.
 
 Includes an offline .NET 10 WPF app, RNNoise and DeepFilterNet3 CPU processing, adjustable speech-aware expansion, live raw/cleaned comparison, headphone monitoring, memory-only test recordings, profile import/export, opt-in startup/updates, tray controls and nine languages.
 
-Download the installer or extract the entire portable ZIP. Install VB-CABLE separately from https://vb-audio.com/Cable/. Select CABLE Input in this app and CABLE Output as the microphone in your call/game. See the repository setup guide. Compare SHA256SUMS.txt before running downloads.
+Download the installer or extract the entire portable ZIP. Both include the intact official VB-CABLE Pack45 ZIP, Windows driver 3.3.1.7, and original README. The shared setup assistant checks device identity, reuses working installations, explains administrator/restart/default-device changes and offers explicit offline preparation or download. Only the official interactive installer is elevated; no silent installation, automatic restart or cable update/removal occurs. The app uninstaller preserves VB-CABLE. Select CABLE Input here and CABLE Output in Discord/TeamSpeak. Compare SHA256SUMS.txt before running downloads.
 
 This is a prerelease: application signing, the full hardware/Windows 11 validation matrix and human translation review remain pending. The latency value is an estimate; external cable/hardware latency is excluded. Aggressive suppression may affect quiet speech. No promise of complete noise elimination.
 
-The branded driver is experimental source only and is not installed. It requires WDK compilation, isolated kernel testing and production signing. GPU processing and enrolled-voice isolation are unavailable; no enrollment UI is shown.
+Custom driver development, SYSVAD preparation and signing milestones have been removed; previous source remains in Git history and older releases. GPU processing and enrolled-voice isolation remain unavailable. Existing preferences migrate without enabling new VB-CABLE background checks. The assistant is translated into all nine languages, including Arabic RTL.
 
-MIT, copyright JustPixels, with retained separate third-party licenses. No telemetry or automatic audio saves. validation.json contains synthetic timing and smoke-test results, not a certified speech-quality benchmark.
+MIT source, copyright JustPixels. VB-CABLE is VB-Audio Software donationware under its separate license: https://vb-audio.com/Services/licensing.htm — please donate/pay when useful or professionally used. Organizational licensing conditions apply; A+B/C+D are excluded. No telemetry or automatic audio saves. validation.json and cable-validation.json report actual automated checks and pending manual cases. Speech quality, isolated Windows 10/11 driver setup and Discord/TeamSpeak tests are not claimed as passed.
+
+Local Windows 10 smoke testing detected the installed 3.3.1.7 driver and passed RNNoise/DF3 cable routing with two simultaneous WASAPI consumers, mute over bypass, bypass equality and RAM recording. Maximum processing was 1.2614 ms RNNoise / 1.9965 ms DF3 per 10 ms frame. Maximum application-delay estimates were 74.4735 / 95.5849 ms with concurrent compilation, above the 50 ms target; these exclude external cable/hardware delay and do not prove speech quality. See docs/VALIDATION.md. Real TeamSpeak/Discord tests are left to the user.
+
+App-only installation/uninstallation on the Windows 10 development PC preserved the existing cable and an unrelated test file. Clean isolated Windows 10/11 cable installation remains pending. Sanitized local results are in validation/windows10-2026-10-06.json, separate from CI reports.

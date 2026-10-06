@@ -10,15 +10,18 @@ if (!$SkipBuild) {
     & cargo build --locked -p nmb-host --release
     if ($LASTEXITCODE) { throw 'Audio build failed' }
 }
-$bundle = Join-Path $root 'artifacts/NoMoreBacknoise-0.1.0-win-x64'
+$version=(Get-Content version.json -Raw | ConvertFrom-Json).version
+$bundle = Join-Path $root "artifacts/NoMoreBacknoise-$version-win-x64"
 & dotnet publish app/NoMoreBacknoise.csproj -c Release -r win-x64 --self-contained true -o $bundle
 if ($LASTEXITCODE) { throw 'Interface build failed' }
 Copy-Item -LiteralPath target/release/nmb-host.exe -Destination $bundle
 Copy-Item -LiteralPath LICENSE -Destination $bundle
 Copy-Item -LiteralPath README.md -Destination $bundle
 Copy-Item -LiteralPath docs -Destination $bundle -Recurse -Force
+Copy-Item -LiteralPath validation -Destination $bundle -Recurse -Force
 & "$PSScriptRoot/notices.ps1" -Destination (Join-Path $bundle 'third-party')
 Copy-Item -LiteralPath THIRD_PARTY_NOTICES.md -Destination $bundle
+& "$PSScriptRoot/cable-package.ps1" -Destination (Join-Path $bundle 'dependencies')
 $nsis = Join-Path $root '.cache/nsis/nsis-3.11/makensis.exe'
 if (!(Test-Path -LiteralPath $nsis)) {
     $archive = Join-Path $root '.cache/nsis-3.11-mirror.zip'
@@ -36,10 +39,10 @@ $uninstallLines += @(Get-ChildItem -LiteralPath $bundle -Directory -Recurse -For
     '    RMDir "$INSTDIR\{0}"' -f $relative
 })
 [IO.File]::WriteAllLines($uninstallManifest,$uninstallLines,[Text.UTF8Encoding]::new($false))
-& $nsis '/V2' ("/DBUNDLE=" + $bundle) ("/DUNINSTALL_MANIFEST=" + $uninstallManifest) (Join-Path $root 'installer/NoMoreBacknoise.nsi')
+& $nsis '/V2' ("/DAPP_VERSION="+$version) ("/DBUNDLE=" + $bundle) ("/DUNINSTALL_MANIFEST=" + $uninstallManifest) (Join-Path $root 'installer/NoMoreBacknoise.nsi')
 if ($LASTEXITCODE) { throw 'Installer build failed' }
-Compress-Archive -Path (Join-Path $bundle '*') -DestinationPath artifacts/NoMoreBacknoise-0.1.0-portable-win-x64.zip -Force
-$files = Get-ChildItem artifacts -File | Where-Object { $_.Name -like 'NoMoreBacknoise-0.1.0-*' -and $_.Extension -in '.exe','.zip' }
+Compress-Archive -Path (Join-Path $bundle '*') -DestinationPath "artifacts/NoMoreBacknoise-$version-portable-win-x64.zip" -Force
+$files = Get-ChildItem artifacts -File | Where-Object { $_.Name -like "NoMoreBacknoise-$version-*" -and $_.Extension -in '.exe','.zip' }
 $lines = $files | ForEach-Object { (Get-FileHash -LiteralPath $_.FullName).Hash.ToLowerInvariant() + '  ' + $_.Name }
 [IO.File]::WriteAllLines((Join-Path $root 'artifacts/SHA256SUMS.txt'), $lines, [Text.Encoding]::ASCII)
 Write-Host 'Installer, portable ZIP and SHA256SUMS.txt are ready in artifacts.'

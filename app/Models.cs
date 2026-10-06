@@ -16,20 +16,37 @@ public class ProcessingSettings {
     }
 }
 public class UserSettings {
-    public int Version { get; set; } = 1; public bool FirstLaunchComplete { get; set; }
+    public int Version { get; set; } = 2; public bool FirstLaunchComplete { get; set; }
     public string Language { get; set; } = "en"; public string? InputId { get; set; } public string? OutputId { get; set; }
     public bool WindowsStartup { get; set; } public bool AutoProcess { get; set; } public bool CloseToTray { get; set; } = true;
     public bool UpdateChecks { get; set; } public DateTimeOffset? LastUpdateCheck { get; set; }
+    public bool CableUpdateChecks { get; set; } public DateTimeOffset? LastCableUpdateCheck { get; set; }
+    public bool CableSetupSeen { get; set; }
+    public long? CableInstallBoot { get; set; }
+    public Dictionary<string,string?>? CableDefaultsBefore { get; set; }
     public string MuteHotkey { get; set; } = ""; public string BypassHotkey { get; set; } = "";
     public ProcessingSettings Processing { get; set; } = new(); public Dictionary<string, ProcessingSettings> Profiles { get; set; } = new();
 }
-public record Endpoint(string Id, string Name, string Direction) { public override string ToString() => Name; }
+public record Endpoint(string Id, string Name, string Direction, string? InstanceId=null, string State="Active", uint? FormFactor=null) {
+    public bool IsStandardCable { get; set; }
+    public string? DriverVersion { get; set; }
+    public string? DriverProvider { get; set; }
+    public string? HardwareId { get; set; }
+    public override string ToString() => Name;
+}
 public static class SettingsStore {
     public static string DirectoryPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "NoMoreBacknoise");
     public static string FilePath => Path.Combine(DirectoryPath, "settings.json");
     public static UserSettings Load() {
-        try { if (!File.Exists(FilePath) || new FileInfo(FilePath).Length>1048576) return new(); var settings = JsonSerializer.Deserialize<UserSettings>(File.ReadAllText(FilePath), App.Json) ?? new(); if (settings.Version != 1 || settings.Processing==null || settings.Profiles==null || settings.Language==null || settings.MuteHotkey==null || settings.BypassHotkey==null) return new(); settings.Processing.Validate(); foreach (var p in settings.Profiles.Values) { if(p==null)return new(); p.Validate(); } return settings; }
+        try { if (!File.Exists(FilePath) || new FileInfo(FilePath).Length>1048576) return new(); return Parse(File.ReadAllText(FilePath)); }
         catch (Exception e) when (e is IOException or JsonException or InvalidDataException or UnauthorizedAccessException) { return new(); }
+    }
+    public static UserSettings Parse(string json) {
+        var settings=JsonSerializer.Deserialize<UserSettings>(json,App.Json) ?? new();
+        if(settings.Version is not (1 or 2) || settings.Processing==null || settings.Profiles==null || settings.Language==null || settings.MuteHotkey==null || settings.BypassHotkey==null) throw new InvalidDataException("Unsupported settings.");
+        settings.Processing.Validate(); foreach(var profile in settings.Profiles.Values) { if(profile==null)throw new InvalidDataException("Invalid profile.");profile.Validate(); }
+        if(settings.Version==1) { settings.CableUpdateChecks=false;settings.LastCableUpdateCheck=null; }
+        settings.Version=2; return settings;
     }
     public static void Save(UserSettings settings) { settings.Processing.Validate(); Directory.CreateDirectory(DirectoryPath); var temp = FilePath + ".tmp"; File.WriteAllText(temp, JsonSerializer.Serialize(settings, App.Json)); File.Move(temp, FilePath, true); }
 }

@@ -1,7 +1,7 @@
 Unicode true
 !include "MUI2.nsh"
 Name "NoMoreBacknoise++"
-OutFile "..\artifacts\NoMoreBacknoise-0.1.0-setup-win-x64.exe"
+OutFile "..\artifacts\NoMoreBacknoise-${APP_VERSION}-setup-win-x64.exe"
 InstallDir "$LOCALAPPDATA\Programs\NoMoreBacknoise"
 RequestExecutionLevel user
 SetCompressor /SOLID lzma
@@ -10,6 +10,10 @@ SetCompressor /SOLID lzma
 !insertmacro MUI_PAGE_LICENSE "..\LICENSE"
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
+!define MUI_FINISHPAGE_RUN "$INSTDIR\NoMoreBacknoise.exe"
+!define MUI_FINISHPAGE_RUN_PARAMETERS "--setup-cable"
+!define MUI_FINISHPAGE_RUN_TEXT "Open the VB-CABLE setup assistant (optional)"
+!define MUI_FINISHPAGE_RUN_NOTCHECKED
 !insertmacro MUI_PAGE_FINISH
 !insertmacro MUI_UNPAGE_CONFIRM
 !insertmacro MUI_UNPAGE_INSTFILES
@@ -22,7 +26,7 @@ Section "NoMoreBacknoise++" SEC_MAIN
     CreateShortcut "$SMPROGRAMS\NoMoreBacknoise++\NoMoreBacknoise++.lnk" "$INSTDIR\NoMoreBacknoise.exe"
     CreateShortcut "$SMPROGRAMS\NoMoreBacknoise++\Uninstall.lnk" "$INSTDIR\Uninstall.exe"
     WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\NoMoreBacknoise" "DisplayName" "NoMoreBacknoise++"
-    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\NoMoreBacknoise" "DisplayVersion" "0.1.0"
+    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\NoMoreBacknoise" "DisplayVersion" "${APP_VERSION}"
     WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\NoMoreBacknoise" "Publisher" "JustPixels"
     WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\NoMoreBacknoise" "UninstallString" '"$INSTDIR\Uninstall.exe"'
     WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\NoMoreBacknoise" "NoModify" 1

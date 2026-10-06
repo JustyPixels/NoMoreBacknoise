@@ -9,6 +9,9 @@
 - **Fallback:** DeepFilterNet errors fall back to RNNoise; loss of both engines forwards raw audio and visibly marks an unfiltered microphone. Mute still overrides raw fallback. Retry explicitly to restore filtering. If the host exits, the cable receives no new audio; this app does not switch Windows defaults.
 - **Disconnect/sleep:** bounded stale buffers are discarded and the selected endpoint is reopened. No automatic switch to a different physical device. Some hardware creates a new endpoint ID after reinstall; select it explicitly.
 - **Portable doesn't launch:** extract all files, including runtime, host and localization. Do not run the EXE inside the ZIP.
+- **Cable setup:** open Settings → VB-CABLE setup → Check devices again. Disabled endpoints need enabling in Sound settings. A registered but incomplete cable needs restart/Device Manager inspection; do not reinstall over it. Detection errors disable installation. Renamed endpoints are matched by Windows PnP ancestry, hardware ID and provider, not their label.
+- **Package or signature error:** retry with the included offline ZIP or the approved download. If neither validates, use the official VB-Audio site. Do not disable Windows signature checks, import trust certificates or use silent commands. If the vendor shows Remove, an existing installation is present: cancel and follow the official update steps.
+- **Reboot or changed defaults:** restart Windows manually, reopen the assistant and verify again. Review before/after role IDs, then restore defaults in Sound settings if needed. A pending reboot is never reported as completed setup.
 - **Shortcut unavailable:** choose a different Ctrl/Alt/Shift combination. Shortcuts are unassigned by default.
 - **Uninstall:** quit the app from its tray before uninstalling; per-user settings are retained. Remove `%LOCALAPPDATA%\NoMoreBacknoise` manually if desired. VB-CABLE is managed by its publisher and remains installed.
 

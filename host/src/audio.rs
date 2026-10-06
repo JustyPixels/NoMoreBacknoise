@@ -7,18 +7,32 @@ use wasapi::*;
 
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Endpoint { pub id: String, pub name: String, pub direction: String }
+pub struct Endpoint { pub id: String, pub name: String, pub direction: String, pub instance_id: Option<String>, pub state: String, pub form_factor: Option<u32> }
 pub fn devices() -> Result<Vec<Endpoint>> {
+    inventory(false)
+}
+pub fn inventory(include_inactive: bool) -> Result<Vec<Endpoint>> {
     initialize_mta().ok()?;
     let enumerator = DeviceEnumerator::new()?;
     let mut endpoints = Vec::new();
     for (direction, name) in [(Direction::Capture, "capture"), (Direction::Render, "render")] {
-        let collection = enumerator.get_device_collection(&direction)?;
+        let collection = if include_inactive { enumerator.get_device_inventory(&direction)? } else { enumerator.get_device_collection(&direction)? };
         for device in collection.into_iter().flatten() {
-            endpoints.push(Endpoint { id: device.get_id()?, name: device.get_friendlyname()?, direction: name.into() });
+            endpoints.push(Endpoint { id: device.get_id()?, name: device.get_friendlyname().unwrap_or_else(|_| "Audio endpoint".into()), direction: name.into(), instance_id: device.get_instance_id().ok(), state: device.get_state()?.to_string(), form_factor: device.get_form_factor().ok() });
         }
     }
     Ok(endpoints)
+}
+pub fn defaults() -> Result<serde_json::Value> {
+    initialize_mta().ok()?;
+    let enumerator = DeviceEnumerator::new()?;
+    let mut result = serde_json::Map::new();
+    for (direction, name) in [(Direction::Capture, "capture"), (Direction::Render, "render")] {
+        for (role, label) in [(Role::Console, "console"), (Role::Multimedia, "multimedia"), (Role::Communications, "communications")] {
+            result.insert(format!("{name}/{label}"), enumerator.get_default_device_for_role(&direction, &role).ok().and_then(|d| d.get_id().ok()).map_or(serde_json::Value::Null, serde_json::Value::String));
+        }
+    }
+    Ok(serde_json::Value::Object(result))
 }
 pub struct AudioState {
     pub stop: AtomicBool, pub capture_ms: AtomicU32, pub render_ms: AtomicU32,

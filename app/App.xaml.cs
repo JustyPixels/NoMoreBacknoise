@@ -9,6 +9,10 @@ public partial class App : Application {
     protected override void OnStartup(StartupEventArgs e) {
         DispatcherUnhandledException += (_, args) => { MessageBox.Show(args.Exception.Message, "NoMoreBacknoise++"); args.Handled = true; };
         Localization.Load(SettingsStore.Load().Language);
+        if(e.Args.Contains("--verify-cable")) {
+            try {CableVerification.Run(e.Args.Last());Shutdown(0);}
+            catch(Exception exception) {System.IO.File.WriteAllText(System.IO.Path.Combine(e.Args.Last(),"cable-error.txt"),exception.ToString());Shutdown(1);}return;
+        }
         if(e.Args.Contains("--verify-ui")) {
             try { UiVerification.Run(e.Args.Last()); Shutdown(0); }
             catch(Exception exception) { System.IO.File.WriteAllText(System.IO.Path.Combine(e.Args.Last(),"ui-error.txt"),exception.ToString()); Shutdown(1); }
