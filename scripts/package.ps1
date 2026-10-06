@@ -5,7 +5,7 @@ Set-Location -LiteralPath $root
 $env:CARGO_HOME = Join-Path $root '.cache/cargo'
 if (!$SkipBuild) {
     & "$PSScriptRoot/bootstrap.ps1"
-    & cargo test --locked -p nmb-host
+    & cargo test --locked -p nmb-host --release
     if ($LASTEXITCODE) { throw 'Audio tests failed' }
     & cargo build --locked -p nmb-host --release
     if ($LASTEXITCODE) { throw 'Audio build failed' }
