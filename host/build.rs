@@ -12,7 +12,8 @@ fn main() {
                 &[("opus_val16", "x_lp4", "len>>2"), ("opus_val16", "y_lp4", "lag>>2"),
                   ("opus_val32", "xcorr", "max_pitch>>1"), ("opus_val32", "yy_lookup", "maxperiod+1")]
             } else {
-                &[("opus_val16", "rnum", "ord"), ("opus_val16", "rden", "ord"), ("opus_val16", "xx", "n")]
+                &[("opus_val16", "rnum", "ord"), ("opus_val16", "rden", "ord"),
+                  ("opus_val16", "xx", "n"), ("opus_val16", "y", "N+ord")]
             };
             for (kind, name, length) in arrays {
                 let declaration = format!("{kind} {name}[{length}];");
