@@ -34,6 +34,8 @@ Section "Uninstall"
     Delete "$SMPROGRAMS\NoMoreBacknoise++\NoMoreBacknoise++.lnk"
     Delete "$SMPROGRAMS\NoMoreBacknoise++\Uninstall.lnk"
     RMDir "$SMPROGRAMS\NoMoreBacknoise++"
-    RMDir /r "$INSTDIR"
+    !include "${UNINSTALL_MANIFEST}"
+    Delete "$INSTDIR\Uninstall.exe"
+    RMDir "$INSTDIR"
     # Settings remain in LOCALAPPDATA\NoMoreBacknoise. No cable/driver is removed.
 SectionEnd

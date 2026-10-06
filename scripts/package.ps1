@@ -26,7 +26,17 @@ if (!(Test-Path -LiteralPath $nsis)) {
     if ((Get-FileHash -LiteralPath $archive).Hash -ne 'C7D27F780DDB6CFFB4730138CD1591E841F4B7EDB155856901CDF5F214394FA1') { throw 'Installer compiler checksum mismatch' }
     Expand-Archive -LiteralPath $archive -DestinationPath .cache/nsis -Force
 }
-& $nsis '/V2' ("/DBUNDLE=" + $bundle) (Join-Path $root 'installer/NoMoreBacknoise.nsi')
+$uninstallManifest = Join-Path $root 'artifacts/uninstall-files.nsh'
+$uninstallLines = @(Get-ChildItem -LiteralPath $bundle -File -Recurse -Force | ForEach-Object {
+    $relative = [IO.Path]::GetRelativePath($bundle,$_.FullName).Replace('$','$$')
+    '    Delete "$INSTDIR\{0}"' -f $relative
+})
+$uninstallLines += @(Get-ChildItem -LiteralPath $bundle -Directory -Recurse -Force | Sort-Object { $_.FullName.Length } -Descending | ForEach-Object {
+    $relative = [IO.Path]::GetRelativePath($bundle,$_.FullName).Replace('$','$$')
+    '    RMDir "$INSTDIR\{0}"' -f $relative
+})
+[IO.File]::WriteAllLines($uninstallManifest,$uninstallLines,[Text.UTF8Encoding]::new($false))
+& $nsis '/V2' ("/DBUNDLE=" + $bundle) ("/DUNINSTALL_MANIFEST=" + $uninstallManifest) (Join-Path $root 'installer/NoMoreBacknoise.nsi')
 if ($LASTEXITCODE) { throw 'Installer build failed' }
 Compress-Archive -Path (Join-Path $bundle '*') -DestinationPath artifacts/NoMoreBacknoise-0.1.0-portable-win-x64.zip -Force
 $files = Get-ChildItem artifacts -File | Where-Object { $_.Name -like 'NoMoreBacknoise-0.1.0-*' -and $_.Extension -in '.exe','.zip' }
