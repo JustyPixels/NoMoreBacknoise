@@ -24,16 +24,17 @@ foreach ($package in $packages) {
 Set-Content -LiteralPath (Join-Path $Destination 'RUST-INVENTORY.txt') -Value $index -Encoding UTF8
 # NuGet runtime packages contain notices; publish does not automatically copy them.
 $assets = Get-Content -LiteralPath (Join-Path $root 'app/obj/project.assets.json') -Raw | ConvertFrom-Json -AsHashtable
-foreach ($entry in $assets.libraries.GetEnumerator() | Where-Object {$_.Key -match '^Microsoft\.(NETCore|WindowsDesktop)\.App\.Runtime\.win-x64/'}) {
-    $folderName = $entry.Key.Replace('/','-')
+foreach ($entry in $assets.project.frameworks.Values.downloadDependencies | Where-Object {$_.name -match '^Microsoft\.(NETCore|WindowsDesktop)\.App\.Runtime\.win-x64$'}) {
+    $runtimeVersion = $entry.version.Trim('[',']').Split(',')[0].Trim()
+    $folderName = $entry.name + '-' + $runtimeVersion
     $output = Join-Path $Destination $folderName
     New-Item -ItemType Directory -Force $output | Out-Null
     $found = $false
     foreach ($folder in $assets.packageFolders.Keys) {
-        $directory = Join-Path $folder $entry.Value.path
+        $directory = Join-Path $folder ($entry.name.ToLowerInvariant() + '/' + $runtimeVersion)
         if (Test-Path -LiteralPath $directory) {
             Get-ChildItem -LiteralPath $directory -File | Where-Object { $_.Name -match '(LICENSE|THIRD.?PARTY.?NOTICES)' } | ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination $output; $found = $true }
         }
     }
-    if (!$found) { throw "Missing runtime license notices: $($entry.Key)" }
+    if (!$found) { throw "Missing runtime license notices: $($entry.name)" }
 }
